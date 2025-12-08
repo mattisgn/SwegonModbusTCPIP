@@ -1,0 +1,186 @@
+# Swegon CASA R5H (SCB 3.0) Modbus Configuration
+# Adapted from Ztaeyn/HomeAssistant-VTR-Modbus
+# Registers based on Swegon CASA Smart SCB 3.0 Commissioning Record
+
+modbus:
+  - name: swegon_casa
+    type: tcp
+    host: 192.168.1.20  # <--- CHANGE THIS TO YOUR SWEGON IP
+    port: 502
+    
+    sensors:
+      # --- Temperatures (Input Registers 3x) ---
+      # Source PDF Page 5: Diagnostics Measurements
+      # Note: Register addresses are offset by -1 (e.g. 3x6201 -> 6200)
+      
+      - name: "Swegon Fresh Air Temp"
+        unique_id: swegon_fresh_air_temp
+        address: 6200  # 3x6201
+        input_type: input
+        unit_of_measurement: "°C"
+        data_type: int16
+        scale: 0.1
+        precision: 1
+        scan_interval: 30
+
+      - name: "Swegon Supply Air Temp"
+        unique_id: swegon_supply_air_temp
+        address: 6202  # 3x6203
+        input_type: input
+        unit_of_measurement: "°C"
+        data_type: int16
+        scale: 0.1
+        precision: 1
+        scan_interval: 30
+
+      - name: "Swegon Extract Air Temp"
+        unique_id: swegon_extract_air_temp
+        address: 6203  # 3x6204
+        input_type: input
+        unit_of_measurement: "°C"
+        data_type: int16
+        scale: 0.1
+        precision: 1
+        scan_interval: 30
+      
+      - name: "Swegon Exhaust Air Temp"
+        unique_id: swegon_exhaust_air_temp
+        address: 6204  # 3x6205
+        input_type: input
+        unit_of_measurement: "°C"
+        data_type: int16
+        scale: 0.1
+        precision: 1
+        scan_interval: 30
+
+      # --- Fan Speeds & RPM ---
+      - name: "Swegon Supply Fan RPM"
+        unique_id: swegon_supply_fan_rpm
+        address: 6304  # 3x6305
+        input_type: input
+        unit_of_measurement: "rpm"
+        scan_interval: 30
+
+      - name: "Swegon Exhaust Fan RPM"
+        unique_id: swegon_exhaust_fan_rpm
+        address: 6305  # 3x6306
+        input_type: input
+        unit_of_measurement: "rpm"
+        scan_interval: 30
+
+      # Specific for R5H (Rotary Heat Exchanger)
+      - name: "Swegon Rotor RPM"
+        unique_id: swegon_rotor_rpm
+        address: 6233  # 3x6234
+        input_type: input
+        unit_of_measurement: "rpm"
+        scan_interval: 60
+
+      # --- Status & Filter ---
+      - name: "Swegon Operating Mode Status"
+        unique_id: swegon_operating_mode_status
+        address: 5000 # 4x5001 Reading the holding register to see current state
+        scan_interval: 10
+        # 0=Stopped, 1=Away, 2=Home, 3=Boost, 4=Travelling
+
+      - name: "Swegon Filter Guard Info"
+        unique_id: swegon_filter_guard
+        address: 6129 # 3x6130 Filter guard info
+        input_type: input
+        scan_interval: 3600
+
+    # --- Controls (Holding Registers 4x) ---
+    switches:
+      - name: "Swegon Smart Mode"
+        unique_id: swegon_smart_mode
+        write_type: holding
+        address: 5018 # 4x5019 Smart Control
+        command_on: 1
+        command_off: 0
+        verify:
+            input_type: holding
+            address: 5018
+            state_on: 1
+            state_off: 0
+
+      - name: "Swegon Fireplace Mode"
+        unique_id: swegon_fireplace_mode
+        write_type: holding
+        address: 5001 # 4x5002 Fireplace function
+        command_on: 1
+        command_off: 0
+
+# --- Inputs for Dashboard Control ---
+input_select:
+  swegon_mode:
+    name: Swegon Ventilation Mode
+    options:
+      - "Stopped"
+      - "Away"
+      - "Home"
+      - "Boost"
+      - "Travelling"
+    icon: mdi:fan
+
+input_number:
+  swegon_temp_setpoint:
+    name: Swegon Temperature Setpoint
+    min: 13
+    max: 25
+    step: 1
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer-lines
+
+# --- Automations to sync Inputs <-> Modbus ---
+automation:
+  - alias: "Swegon: Set Operating Mode"
+    id: swegon_set_operating_mode
+    trigger:
+      - platform: state
+        entity_id: input_select.swegon_mode
+    action:
+      - service: modbus.write_register
+        data:
+          hub: swegon_casa
+          address: 5000 # 4x5001
+          value: >
+            {% set mapper = {
+              'Stopped': 0,
+              'Away': 1,
+              'Home': 2,
+              'Boost': 3,
+              'Travelling': 4
+            } %}
+            {{ mapper[trigger.to_state.state] }}
+
+  - alias: "Swegon: Update Input Select from Unit"
+    id: swegon_update_input_select
+    trigger:
+      - platform: state
+        entity_id: sensor.swegon_operating_mode_status
+    action:
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.swegon_mode
+        data:
+          option: >
+            {% set mapper = {
+              0: 'Stopped',
+              1: 'Away',
+              2: 'Home',
+              3: 'Boost',
+              4: 'Travelling'
+            } %}
+            {{ mapper[trigger.to_state.state | int] }}
+
+  - alias: "Swegon: Set Temperature"
+    id: swegon_set_temp
+    trigger:
+      - platform: state
+        entity_id: input_number.swegon_temp_setpoint
+    action:
+      - service: modbus.write_register
+        data:
+          hub: swegon_casa
+          address: 5100 # 4x5101 Temp Setpoint
+          value: "{{ (trigger.to_state.state | float * 10) | int }}" # Scale x10 for Modbus (21.5C = 215)
