@@ -1,6 +1,6 @@
 {
 	"domain": "swegon",
-	"name": "Swegon CASA",
+	"name": "Swegon CASA TCPIP",
 	"codeowners": ["@mattisgn"],
 	"config_flow": true,
 	"documentation": "https://github.com/mattisgn/SwegonModbusTCPIP",
