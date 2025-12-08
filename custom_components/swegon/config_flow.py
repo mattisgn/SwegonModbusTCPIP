@@ -14,13 +14,15 @@ from typing import Any
 from homeassistant.const import CONF_DEVICES
 from .const import DOMAIN, CONF_NAME, CONF_DEVICE_MODEL, CONF_IP, CONF_PORT, CONF_SLAVE_ID, CONF_SCAN_INTERVAL, CONF_SCAN_INTERVAL_FAST
 from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_FAST
-from .const import DEVICE_CASA_R4, DEVICE_CASA_R15
+# Removed DEVICE_CASA_R4 and DEVICE_CASA_R15, added DEVICE_CASA_R5H
+from .const import DEVICE_CASA_R5H 
 
 CONFIG_ENTRY_NAME = "Swegon"
 
+# --- MODIFIED: Model is now hardcoded to R5H in the default data ---
 DEVICE_DATA = {
-    CONF_NAME: "",
-    CONF_DEVICE_MODEL: DEVICE_CASA_R4,
+    CONF_NAME: "Swegon Casa R5H", # Default name can be more descriptive
+    CONF_DEVICE_MODEL: DEVICE_CASA_R5H, # Changed default model
     CONF_IP: "192.168.10.13",
     CONF_PORT: 502,
     CONF_SLAVE_ID: 1,
@@ -43,6 +45,8 @@ class SwegonFlowHandler(ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
+            # --- MODIFIED: Ensure the model is set before creating the entry ---
+            user_input[CONF_DEVICE_MODEL] = DEVICE_CASA_R5H
             return self.async_create_entry(title=user_input[CONF_NAME], data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=getDeviceSchema(DEVICE_DATA.copy()), errors=errors)
@@ -55,6 +59,9 @@ class SwegonOptionsFlowHandler(OptionsFlow):
         # Manage the options for the custom component."""
 
         if user_input is not None:
+            # --- MODIFIED: Ensure the model is set before updating the entry ---
+            user_input[CONF_DEVICE_MODEL] = DEVICE_CASA_R5H
+            
             # Update config_entry with new data
             self.hass.config_entries.async_update_entry(
                 self.config_entry, data=user_input, options=self.config_entry.options
@@ -65,20 +72,22 @@ class SwegonOptionsFlowHandler(OptionsFlow):
         return self.async_show_form(step_id="init", data_schema=getDeviceSchema(self.config_entry.data))
 
 """ ################################################### """
-"""                     Dynamic schemas                 """
+"""                     Dynamic schemas                 """
 """ ################################################### """
 # Schema taking device details when adding or updating
 def getDeviceSchema(user_input: dict[str, Any] | None = None) -> vol.Schema:
-    DEVICE_TYPES = [DEVICE_CASA_R4, DEVICE_CASA_R15]
+    # --- MODIFIED: Removed DEVICE_TYPES list and model selector field ---
+    # DEVICE_TYPES = [DEVICE_CASA_R4, DEVICE_CASA_R15]
 
     data_schema = vol.Schema(
         {
             vol.Required(
                 CONF_NAME, description="Name", default=user_input[CONF_NAME]
             ): cv.string,
-            vol.Required(CONF_DEVICE_MODEL, default=user_input[CONF_DEVICE_MODEL]): selector.SelectSelector(
-                selector.SelectSelectorConfig(options=DEVICE_TYPES),
-            ),     
+            # --- MODIFIED: Removed the CONF_DEVICE_MODEL selector field ---
+            # vol.Required(CONF_DEVICE_MODEL, default=user_input[CONF_DEVICE_MODEL]): selector.SelectSelector(
+            #     selector.SelectSelectorConfig(options=DEVICE_TYPES),
+            # ),     
             vol.Required(
                 CONF_IP, description="IP Address", default=user_input[CONF_IP]
             ): cv.string,
