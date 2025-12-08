@@ -5,7 +5,7 @@
 modbus:
   - name: swegon_casa
     type: tcp
-    host: 192.168.1.20  # <--- CHANGE THIS TO YOUR SWEGON IP
+    host: 192.168.1.111  # <--- CHANGE THIS TO YOUR SWEGON IP
     port: 502
     
     sensors:
