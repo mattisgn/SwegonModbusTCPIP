@@ -1,0 +1,12 @@
+{
+    "name": "Swegon Modbus TCP/IP",
+    "render_readme": true,
+    "domains": [
+        "climate", 
+        "fan", 
+        "sensor", 
+        "number", 
+        "switch"
+    ],
+    "homeassistant": "2023.1.0"
+}
