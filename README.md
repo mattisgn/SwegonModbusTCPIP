@@ -2,7 +2,7 @@
 
 Home Assistant custom component for Swegon CASA R5H (SCB 3.0) over Modbus TCP/IP.
 
-This integration provides sensors, switches, and automations to monitor and control Swegon ventilation units via Modbus TCP protocol.
+This integration provides sensors, switches, select dropdowns, and number controls to monitor and control Swegon ventilation units via Modbus TCP protocol entirely through the Home Assistant UI.
 
 ## Installation
 
@@ -17,64 +17,60 @@ This integration provides sensors, switches, and automations to monitor and cont
 
 ### Manual Installation
 
-Copy the `custom_components/swegon_modbus/` directory to your Home Assistant `custom_components/` folder.
+Copy the `custom_components/swegon_modbus/` directory to your Home Assistant `custom_components/` folder:
+
+```
+~/.homeassistant/custom_components/swegon_modbus/
+```
 
 ## Configuration
 
-1. Copy `custom_components/swegon_modbus/swegon_casa_modbus.yaml` into your Home Assistant configuration directory (e.g. `packages/` or include it from `configuration.yaml`).
-
-2. Update the `host` under `modbus` to the IP address of your Swegon unit:
-   ```yaml
-   modbus:
-     - name: swegon_casa
-       type: tcp
-       host: YOUR.SWEGON.IP.ADDRESS  # Change this
-       port: 502
-   ```
-
-3. Include the configuration in `configuration.yaml`:
-   ```yaml
-   homeassistant:
-     packages:
-       swegon: !include packages/swegon_casa_modbus.yaml
-   ```
-
-4. Restart Home Assistant.
+1. Go to Home Assistant **Settings** → **Devices & Services** → **Integrations**
+2. Click **Create Integration** or the **+** button
+3. Search for "Swegon Modbus TCP/IP"
+4. Fill in the configuration:
+   - **Name**: Display name for your Swegon unit (default: "Swegon CASA")
+   - **Host**: IP address of your Swegon CASA unit (e.g., `192.168.1.111`)
+   - **Port**: Modbus TCP port (default: `502`)
+5. Click **Create**
+6. Restart Home Assistant
 
 ## Features
 
-### Sensors
-- Fresh air, supply, extract, and exhaust air temperatures
-- Supply and exhaust fan RPM
-- Rotor RPM (for R5H heat exchanger)
-- Operating mode status
-- Filter guard information
-- Temperature setpoint readback
+### Sensors (Read-Only)
+- **Temperatures**: Fresh air, supply, extract, and exhaust air temperatures (°C)
+- **Fan Speeds**: Supply and exhaust fan RPM
+- **Rotor Speed**: Rotary heat exchanger RPM (R5H models)
+- **Status**: Operating mode status, filter guard information
+- **Setpoint Readback**: Current temperature setpoint (°C)
 
-### Switches
-- Smart Mode control
-- Fireplace Mode toggle
+### Switches (On/Off Control)
+- **Smart Mode**: Enable/disable smart ventilation control
+- **Fireplace Mode**: Toggle fireplace ventilation boost
 
-### Controls
-- Operating mode selector (Stopped, Away, Home, Boost, Travelling)
-- Temperature setpoint (13–25°C)
+### Select (Multiple Options)
+- **Operating Mode**: Select from Stopped, Away, Home, Boost, or Travelling
 
-### Automations
-- Sync operating mode between dashboard and Swegon unit
-- Sync temperature setpoint to Modbus
-- Reflect unit status back to dashboard
+### Number (Adjustable Values)
+- **Temperature Setpoint**: Adjust target temperature (13–25°C)
 
 ## Register Addressing
 
-Register addresses in this configuration follow the Swegon SCB 3.0 commissioning record. Home Assistant uses zero-based Modbus addressing, so:
-- Input Registers (3x) are offset by -1 (e.g. 3x6201 → address 6200)
-- Holding Registers (4x) are offset by -1 (e.g. 4x5101 → address 5100)
+All register addresses follow the Swegon SCB 3.0 commissioning record with zero-based Modbus addressing:
+- **Input Registers (3x)**: Offset by -1 (e.g., 3x6201 → address 6200)
+- **Holding Registers (4x)**: Offset by -1 (e.g., 4x5101 → address 5100)
 
 ## Notes
 
-- Test carefully and adapt scan intervals to your setup.
-- Ensure your Swegon unit is configured for Modbus TCP on port 502.
-- Register addresses are based on Swegon CASA Smart SCB 3.0 specifications.
+- Ensure your Swegon unit is accessible on your network and configured for Modbus TCP on port 502
+- Register addresses are based on Swegon CASA Smart SCB 3.0 specifications
+- Temperature values are scaled by 0.1 (e.g., Modbus value 215 = 21.5°C)
+- Setpoint write values are scaled by 10 (e.g., 21.5°C = 215)
+
+## Requirements
+
+- Home Assistant 2023.1.0 or later
+- `pymodbus>=3.1.0`
 
 ## License
 

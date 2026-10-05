@@ -1,18 +1,18 @@
-"""Number platform for Swegon Modbus integration."""
+"""Switch platform for Swegon Modbus integration."""
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-from homeassistant.components.number import NumberEntity, NumberMode
-from homeassistant.const import UnitOfTemperature, CONF_HOST, CONF_NAME, CONF_PORT
+from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
 
 from . import DOMAIN
-from .const import DEFAULT_PORT, SENSOR_TEMP_SETPOINT
+from .const import DEFAULT_PORT, SWITCH_SMART_MODE, SWITCH_FIREPLACE_MODE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,19 +20,24 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up Swegon Modbus number from a config entry."""
+    """Set up Swegon Modbus switches from a config entry."""
     host = entry.data[CONF_HOST]
     port = entry.data.get(CONF_PORT, DEFAULT_PORT)
     name = entry.data[CONF_NAME]
 
     entities = [
-        SwegonModbusNumber(
-            name="Temperature Setpoint",
-            unique_id="swegon_temp_setpoint_number",
-            address=SENSOR_TEMP_SETPOINT,
-            min_value=13,
-            max_value=25,
-            step=1,
+        SwegonModbusSwitch(
+            name="Smart Mode",
+            unique_id="swegon_smart_mode",
+            address=SWITCH_SMART_MODE,
+            entry_id=entry.entry_id,
+            host=host,
+            port=port,
+        ),
+        SwegonModbusSwitch(
+            name="Fireplace Mode",
+            unique_id="swegon_fireplace_mode",
+            address=SWITCH_FIREPLACE_MODE,
             entry_id=entry.entry_id,
             host=host,
             port=port,
@@ -42,35 +47,26 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class SwegonModbusNumber(NumberEntity):
-    """Representation of a Swegon Modbus number entity."""
-
-    _attr_mode = NumberMode.BOX
+class SwegonModbusSwitch(SwitchEntity):
+    """Representation of a Swegon Modbus switch."""
 
     def __init__(
         self,
         name: str,
         unique_id: str,
         address: int,
-        min_value: float = 0,
-        max_value: float = 100,
-        step: float = 1,
         entry_id: str = "",
         host: str = "",
         port: int = 502,
     ) -> None:
-        """Initialize the number."""
+        """Initialize the switch."""
         self._attr_name = f"Swegon {name}"
         self._attr_unique_id = unique_id
-        self._attr_native_min_value = min_value
-        self._attr_native_max_value = max_value
-        self._attr_native_step = step
-        self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
         self.address = address
         self.entry_id = entry_id
         self.host = host
         self.port = port
-        self._attr_native_value = None
+        self._attr_is_on = None
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -82,10 +78,14 @@ class SwegonModbusNumber(NumberEntity):
             model="CASA R5H SCB 3.0",
         )
 
-    async def async_set_native_value(self, value: float) -> None:
-        """Set the value."""
-        self._attr_native_value = value
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn the switch on."""
+        self._attr_is_on = True
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the switch off."""
+        self._attr_is_on = False
 
     async def async_update(self) -> None:
-        """Update the number value from Modbus."""
+        """Update the switch state from Modbus."""
         pass
