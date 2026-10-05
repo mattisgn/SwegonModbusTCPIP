@@ -1,0 +1,11 @@
+{
+  "domain": "swegon_modbus",
+  "name": "Swegon Modbus TCP/IP",
+  "codeowners": ["@mattisgn"],
+  "config_flow": false,
+  "documentation": "https://github.com/mattisgn/SwegonModbusTCPIP",
+  "homeassistant": "2023.1.0",
+  "iot_class": "local_polling",
+  "requirements": [],
+  "version": "1.0.0"
+}
